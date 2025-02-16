@@ -7,10 +7,10 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class ErrorResponse {
+public class ErrorResponse{
 
-	   private LocalDateTime localDateTime;
-	    private int status;
-	    private String error;
-	    private String path;
+	private LocalDateTime localDateTime;
+	private int status;
+	private String error;
+	private String path;
 }
