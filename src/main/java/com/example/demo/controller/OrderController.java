@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.Dto.OrderCancelDto;
 import com.example.demo.Dto.OrderDto;
+import com.example.demo.entites.Order;
 import com.example.demo.service.OrderServcie;
 @RestController
 @RequestMapping("/v1/api/users")
@@ -25,16 +26,23 @@ public class OrderController {
 	public ResponseEntity<String> createOrder(@RequestBody OrderDto orderDto){
 		
 		this.orderServcie.createOrder(orderDto);
-		return new ResponseEntity<String>("order placed successfully",HttpStatus.CREATED);
+		return new ResponseEntity<>("order placed successfully",HttpStatus.CREATED);
+	}
+	@PostMapping("/order")
+	public ResponseEntity<String> createOrde(@RequestBody OrderDto orderDto){
+		
+//		this.orderServcie.createOrder(orderDto);
+		return new ResponseEntity<>("order placed successfully",HttpStatus.CREATED);
 	}
 	@DeleteMapping("/delete")
 	public ResponseEntity<String> deleteOrder(@RequestBody OrderCancelDto orderCancelDto){
+		//added comment
 		//added commiet in feature 2
 		this.orderServcie.cancelOrder(orderCancelDto);
 
 		// added newe             lien aat 34
 		// added new line in line no 34
 
-		return new ResponseEntity<String>("order deleted successfull",HttpStatus.OK);
+		return new ResponseEntity<>("order deleted successfull",HttpStatus.OK);
 	}
 }

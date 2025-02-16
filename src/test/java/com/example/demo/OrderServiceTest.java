@@ -1,18 +1,23 @@
 package com.example.demo;
 
-import static org.mockito.Mockito.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 
-import javax.transaction.Transactional;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.example.demo.Dto.OrderCancelDto;
 import com.example.demo.Dto.OrderDto;
@@ -20,83 +25,83 @@ import com.example.demo.entites.Invoice;
 import com.example.demo.entites.Order;
 import com.example.demo.entites.OrderManagement;
 import com.example.demo.exceptions.BadRequestException;
-import com.example.demo.exceptions.OutOfStockException;
 import com.example.demo.repository.InvoiceRepository;
 import com.example.demo.repository.OrderManagementRepository;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.service.OrderServcie;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class OrderServiceTest {
 
-    @Mock
-    private InvoiceRepository invoiceRepository;
+	@InjectMocks
+	private OrderServcie orderServcie;
+	@Mock
+	private OrderRepository orderRepository;
+	@Mock
+	private InvoiceRepository invoiceRepository;
+	@Mock
+	private OrderManagementRepository orderManagementRepository;
+@Test 
+	public void testCancelOrderValidate() {
+		OrderCancelDto orderCancelDto = new OrderCancelDto();
+		orderCancelDto.setOrderid(1l);
+	 boolean cancelOrder = orderServcie.cancelOrder(orderCancelDto);
+	 verify(orderRepository,times(1)).deleteById(1l);
+		assertEquals(true, cancelOrder);
+	}
+@Test
+public void testCancelOrderValidate_badRequestException() {
+	OrderCancelDto orderCancelDto = new OrderCancelDto();
+	orderCancelDto.setOrderid(-1l);
+	BadRequestException badRequestException = assertThrows(BadRequestException.class, ()->{
+		orderServcie.cancelOrder(null);
+	});
+	assertEquals("bad cancel order request", badRequestException.getMessage());
+	verify(orderRepository, never()).deleteById(anyLong());
+}
 
-    @Mock
-    private OrderManagementRepository orderManagementRepository;
-
-    @Mock
-    private OrderRepository orderRepository;
-
-    @InjectMocks
-    private OrderServcie orderServcie;
-
-    private OrderDto orderDto;
-    private OrderCancelDto orderCancelDto;
-
-    @Before
-    public void setUp() {
-        orderDto = new OrderDto();
-        orderDto.setProductId(1L);
-        orderDto.setQuantity(2);
-
-        orderCancelDto = new OrderCancelDto();
-        orderCancelDto.setOrderid(1L);
-    }
-
-    @Test
-    @Transactional
-    public void testCreateOrder() {
-        when(orderRepository.save(any(Order.class))).thenReturn(new Order());
-        when(orderManagementRepository.save(any(OrderManagement.class))).thenReturn(new OrderManagement());
-        when(invoiceRepository.save(any(Invoice.class))).thenReturn(new Invoice());
-
-        String result = orderServcie.createOrder(orderDto);
-
-        assertNull(result);
-        verify(orderRepository, times(1)).save(any(Order.class));
-        verify(orderManagementRepository, times(1)).save(any(OrderManagement.class));
-        verify(invoiceRepository, times(1)).save(any(Invoice.class));
-    }
-
-    @Test(expected = OutOfStockException.class)
-    @Transactional
-    public void testCreateOrder_OutOfStock() {
-        when(orderRepository.save(any(Order.class))).thenThrow(new OutOfStockException("Out of stock"));
-
-        orderServcie.createOrder(orderDto);
-    }
-
-    @Test(expected = BadRequestException.class)
-    @Transactional
-    public void testCreateOrder_BadRequest() {
-        orderServcie.createOrder(null);
-    }
-
-    @Test
-    @Transactional
-    public void testCancelOrder() {
-        doNothing().when(orderRepository).deleteById(anyLong());
-
-        String result = orderServcie.cancelOrder(orderCancelDto);
-
-        assertNull(result);
-        verify(orderRepository, times(1)).deleteById(anyLong());
-    }
-
-    @Test(expected = BadRequestException.class)
-    @Transactional
-    public void testCancelOrder_BadRequest() {
-        orderServcie.cancelOrder(null);
-    }
+@Test
+ void testCreateOrder() {
+	OrderDto orderDto = new OrderDto();
+	orderDto.setProductId(1l);
+	orderDto.setQuantity(2);
+	orderDto.setUserId(2l);
+	
+	Order order = new Order();
+	order.setOrderDate(LocalDate.now());
+	
+	OrderManagement orderManagement = new OrderManagement();
+	orderManagement.setOrder(order);
+	orderManagement.setCount(orderDto.getQuantity());
+	orderManagement.setProductId(orderDto.getProductId());
+	
+	order.setOrderManagement(orderManagement);
+	order.setUserid((long) 23);
+	Invoice invoice = new Invoice();
+	invoice.setBilldate(LocalDate.now());
+	invoice.setOrderManagement(orderManagement);
+	invoice.setPrice(0);
+		
+	orderManagement.setInvoice(invoice);
+	when(orderRepository.save(any(Order.class))).thenReturn(order);
+	when(invoiceRepository.save(any(Invoice.class))).thenReturn(invoice);
+	when(orderManagementRepository.save(any(OrderManagement.class))).thenReturn(orderManagement);
+	
+	boolean createOrder = orderServcie.createOrder(orderDto);
+	assertTrue(createOrder);
+	
+	
+}
+@Test	
+public void testCreateOrderBadRequestException() {
+	OrderDto orderDto=null;
+	
+	BadRequestException badRequestException= assertThrows(BadRequestException.class, ()->{
+		orderServcie.createOrder(orderDto);
+	});
+	
+	assertEquals("bad Request",badRequestException.getMessage());
+}
+	
+	
 }
